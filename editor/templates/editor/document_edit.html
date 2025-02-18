@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Document Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .editor-container {
+            width: 80%;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 500px;
+            font-size: 16px;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .summary-box {
+            display: none;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        #nickname-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nickname-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .nickname-box input {
+            padding: 10px;
+            width: 80%;
+        }
+        .nickname-box button {
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="nickname-modal">
+    <div class="nickname-box">
+        <h3>Enter Your Nickname:</h3>
+        <input type="text" id="nickname-input" placeholder="Your nickname">
+        <button onclick="saveNickname()">Join</button>
+    </div>
+</div>
+
+<div class="toolbar">
+    <h2>Edit Document: <span id="doc-title">{{ document.title }}</span></h2>
+    <button id="summarize-btn">Summarize Selection</button>
+</div>
+
+<div class="editor-container">
+    <textarea id="document-content">{{ document.content }}</textarea>
+</div>
+
+<p><strong>Active Users:</strong> <span id="active-users">0</span></p>
+
+<div id="summary-box" class="summary-box">
+    <strong>Summary:</strong>
+    <p id="summary-text"></p>
+</div>
+
+<script>
+    let nickname = localStorage.getItem("nickname") || "";
+
+    if (!nickname) {
+        document.getElementById("nickname-modal").style.display = "flex";
+    }
+
+    function saveNickname() {
+        nickname = document.getElementById("nickname-input").value.trim();
+        if (!nickname) {
+            alert("Please enter a nickname.");
+            return;
+        }
+        localStorage.setItem("nickname", nickname);
+        document.getElementById("nickname-modal").style.display = "none";
+        connectWebSocket();
+    }
+
+    function connectWebSocket() {
+        const socket = new WebSocket("ws://" + window.location.host + "/ws/document/");
+
+        const contentField = document.getElementById("document-content");
+        const activeUsersDisplay = document.getElementById("active-users");
+
+        let isTyping = false;
+
+        socket.onopen = function() {
+            socket.send(JSON.stringify({ type: "set_nickname", nickname: nickname }));
+        };
+
+        contentField.addEventListener("input", function() {
+            isTyping = true;
+            socket.send(JSON.stringify({ content: this.value }));
+        });
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+
+            if (!isTyping || document.activeElement !== contentField) {
+                if (data.content) {
+                    contentField.value = data.content;
+                }
+            }
+
+            if (data.active_users) {
+                activeUsersDisplay.innerText = Object.values(data.active_users).join(", ");
+            }
+        };
+
+        contentField.addEventListener("blur", () => isTyping = false);
+    }
+
+    if (nickname) {
+        connectWebSocket();
+    }
+
+    document.getElementById("summarize-btn").addEventListener("click", function() {
+        let selectedText = window.getSelection().toString();
+        if (!selectedText) {
+            alert("Please select text to summarize.");
+            return;
+        }
+
+        fetch("{% url 'summarize_document' document.id %}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ text: selectedText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("summary-text").innerText = data.summary;
+            document.getElementById("summary-box").style.display = "block";
+        });
+    });
+</script>
+
+</body>
+</html>

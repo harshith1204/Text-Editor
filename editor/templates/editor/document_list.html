@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documents - Real-time Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            width: 60%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            background: #f9f9f9;
+            margin: 5px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+        li a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+        }
+        li a:hover {
+            text-decoration: underline;
+        }
+        .new-doc-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .new-doc-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Your Documents</h2>
+
+    <ul>
+        {% for doc in documents %}
+            <li><a href="{% url 'document_edit' doc.id %}">{{ doc.title }}</a></li>
+        {% empty %}
+            <li>No documents available. Click "New Document" to create one.</li>
+        {% endfor %}
+    </ul>
+
+    <button class="new-doc-btn" id="new-doc-btn">New Document</button>
+
+    <script>
+        document.getElementById("new-doc-btn").addEventListener("click", function() {
+            window.location.href = "{% url 'create_document' %}";
+        });
+    </script>
+    </div>
+
+</body>
+</html>
