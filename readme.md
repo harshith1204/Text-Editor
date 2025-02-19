@@ -62,14 +62,12 @@ Ensure you have Python installed, then install all dependencies using:
 ```bash
 pip install -r requirements.txt
 
----
 
 ### **Run the Django Development Server**
 For basic local testing, you can start Django using:
 '''bash
 python manage.py runserver
 
----
 
 ### **Run the ASGI Server with Daphne**
 For WebSockets support, use Daphne instead of runserver:
